@@ -22,13 +22,19 @@ class DockItemConfiguration<T extends Widget> with EquatableMixin {
   /// Equals true when item "flying"
   bool isFlying;
 
+  /// Equals true if item flying before pan down
+  bool previousFlying;
+
+  /// Equals true if item change position from
   bool isReorderingTo;
 
+  /// Equals true if item change position from
   bool isReorderingFrom;
   DockItemConfiguration({required this.value, required this.title})
       : isFlying = false,
         isReorderingFrom = false,
-        isReorderingTo = false;
+        isReorderingTo = false,
+        previousFlying = false;
 
   @override
   List<Object?> get props => [value, title];
@@ -305,22 +311,25 @@ class _DockItemState<T> extends State<DockItem> {
     final item = widget.item;
     final color = Colors.primaries[item.hashCode % Colors.primaries.length];
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 45),
-      padding: EdgeInsets.only(
-        left: widget.itemPadding + (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
-        right: (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
-      ),
-      child: AnimatedContainer(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: AnimatedPadding(
         duration: const Duration(milliseconds: 45),
-        width: widget.itemDimension,
-        height: widget.itemDimension,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8.0),
-          gradient: _beautifullGradient(color),
+        padding: EdgeInsets.only(
+          left: widget.itemPadding + (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
+          right: (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
         ),
-        child: Center(
-          child: widget.item.value,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 45),
+          width: widget.itemDimension,
+          height: widget.itemDimension,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8.0),
+            gradient: _beautifullGradient(color),
+          ),
+          child: Center(
+            child: widget.item.value,
+          ),
         ),
       ),
     );
@@ -463,6 +472,7 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
 
                       if (!cursorInDock) {
                         item.isFlying = true;
+                        item.previousFlying = true;
                       } else {
                         item.isFlying = false;
                         final indexOfItem = items.indexOf(item);
@@ -489,13 +499,16 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                               }
 
                               reorderingController.add(() async {
-                                final reorderingToItem = items[i.toInt()];
-                                reorderingToItem.isReorderingTo = true;
-                                item.isReorderingFrom = true;
-                                await Future.delayed(const Duration(milliseconds: 45));
+                                if (!item.previousFlying) {
+                                  final reorderingToItem = items[i.toInt()];
+                                  reorderingToItem.isReorderingTo = true;
+                                  item.isReorderingFrom = true;
+                                  await Future.delayed(const Duration(milliseconds: 45));
+                                  reorderingToItem.isReorderingTo = false;
+                                  item.isReorderingFrom = false;
+                                }
+                                item.previousFlying = false;
                                 notifier?.resetStartPosition(newStartPosition);
-                                reorderingToItem.isReorderingTo = false;
-                                item.isReorderingFrom = false;
                                 items.remove(item);
                                 items.insert(i.toInt(), item);
                               });
