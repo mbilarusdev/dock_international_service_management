@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:stream_transform/stream_transform.dart';
 
+/// Bundle which stores asset urls
 class AssetsBundle {
+  /// Background asset
   static const String background = 'images/background.jpeg';
 }
 
-void main() async => runApp(const DockApp());
+void main() => runApp(const DockApp());
 
 /// Dock item configuration
 class DockItemConfiguration<T extends Widget> with EquatableMixin {
@@ -25,11 +27,12 @@ class DockItemConfiguration<T extends Widget> with EquatableMixin {
   /// Equals true if item flying before pan down
   bool previousFlying;
 
-  /// Equals true if item change position from
+  /// Equals true if item reorders with the moved item
   bool isReorderingTo;
 
-  /// Equals true if item change position from
+  /// Equals true if item is moved and reorders
   bool isReorderingFrom;
+
   DockItemConfiguration({required this.value, required this.title})
       : isFlying = false,
         isReorderingFrom = false,
@@ -172,13 +175,12 @@ class ScaffoldWithDock<T extends Widget> extends StatelessWidget {
 }
 
 /// [DockInherited] Notifier for [Dock]
+///
+/// Notifies [DockInherited] context listeners
+/// Works with items positions, reordering
 class DockNotifier<T extends Widget> extends ChangeNotifier {
   /// Initial position on start pan
   Offset? _startPosition;
-
-  bool isReordering = false;
-
-  void changeReordering() => isReordering = !isReordering;
 
   /// Position after user triggers pan update
   Offset? _position;
@@ -195,22 +197,27 @@ class DockNotifier<T extends Widget> extends ChangeNotifier {
     _updateItemPadding(dimension / 4.5);
   }
 
+  /// Item dimension slider value
   double _dimensionSliderValue = 1;
 
   double get dimensionSliderValue => _dimensionSliderValue;
 
+  /// Item dimension before changes
   double? initialDimension;
 
+  /// Updates slider
   void updateDimensionSliderValue(double value) {
     _dimensionSliderValue = value;
     updateItemDimension(value * initialDimension!);
     notifyListeners();
   }
 
+  /// Item left padding
   double? _itemPadding;
 
   double? get itemPadding => _itemPadding;
 
+  /// Updates item padding
   void _updateItemPadding(double value) {
     _itemPadding = value;
   }
@@ -257,6 +264,8 @@ class DockNotifier<T extends Widget> extends ChangeNotifier {
 }
 
 /// InheritedWidget for [DockNotifier]
+///
+/// Notifies [Dock] after [DockNotifier] changes
 class DockInherited<T extends Widget> extends InheritedNotifier<DockNotifier<T>> {
   const DockInherited({
     super.key,
@@ -310,17 +319,17 @@ class _DockItemState<T> extends State<DockItem> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final color = Colors.primaries[item.hashCode % Colors.primaries.length];
-
+    final animatedPadding = (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: AnimatedPadding(
-        duration: const Duration(milliseconds: 45),
+        duration: Dock.reorderAnimationDuration,
         padding: EdgeInsets.only(
-          left: widget.itemPadding + (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
-          right: (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
+          left: widget.itemPadding + animatedPadding,
+          right: animatedPadding.toDouble(),
         ),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 45),
+          duration: Dock.reorderAnimationDuration,
           width: widget.itemDimension,
           height: widget.itemDimension,
           decoration: BoxDecoration(
@@ -386,6 +395,8 @@ class Dock<T extends Widget> extends StatefulWidget {
 
   /// Flying animation duration
   static const Duration flyingDuration = Duration(milliseconds: 500);
+
+  static const Duration reorderAnimationDuration = Duration(milliseconds: 45);
 }
 
 /// State of the [Dock] used to manipulate the [_items].
@@ -399,15 +410,16 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
   // Notifier of dock settings
   DockNotifier<T>? notifier;
 
+  /// Throttle stream controller for reordering
   late StreamController<void Function()> reorderingController;
 
   @override
   void initState() {
+    super.initState();
     reorderingController = StreamController()
       ..stream.throttle(const Duration(milliseconds: 150)).listen((fn) {
         fn.call();
       });
-    super.initState();
     _controller = AnimationController(vsync: this);
     items = widget.items;
   }
@@ -503,7 +515,7 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                                   final reorderingToItem = items[i.toInt()];
                                   reorderingToItem.isReorderingTo = true;
                                   item.isReorderingFrom = true;
-                                  await Future.delayed(const Duration(milliseconds: 45));
+                                  await Future.delayed(Dock.reorderAnimationDuration);
                                   reorderingToItem.isReorderingTo = false;
                                   item.isReorderingFrom = false;
                                 }
@@ -563,11 +575,14 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
 
   @override
   void didChangeDependencies() {
-    final bool initial = notifier == null;
+    final bool isInitial = notifier == null;
     notifier = context.dependOnInheritedWidgetOfExactType<DockInherited<T>>()!.notifier!;
-
-    if (initial) {
-      _controller.addListener(() => setState(() => notifier?.changePosition(_animation.value)));
+    if (isInitial) {
+      _controller.addListener(
+        () => setState(
+          () => notifier?.changePosition(_animation.value),
+        ),
+      );
     }
     super.didChangeDependencies();
   }
