@@ -299,11 +299,9 @@ class _DockItemState<T> extends State<DockItem> {
 
     return Padding(
       padding: EdgeInsets.only(left: widget.itemPadding),
-      child: Container(
-        constraints: BoxConstraints(
-          minWidth: widget.itemDimension,
-          maxWidth: widget.itemDimension,
-        ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        width: widget.itemDimension,
         height: widget.itemDimension,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8.0),
