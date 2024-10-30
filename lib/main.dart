@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 class AssetsBundle {
   static const String background = 'images/background.jpeg';
@@ -19,7 +22,13 @@ class DockItemConfiguration<T extends Widget> with EquatableMixin {
   /// Equals true when item "flying"
   bool isFlying;
 
-  DockItemConfiguration({required this.value, required this.title}) : isFlying = false;
+  bool isReorderingTo;
+
+  bool isReorderingFrom;
+  DockItemConfiguration({required this.value, required this.title})
+      : isFlying = false,
+        isReorderingFrom = false,
+        isReorderingTo = false;
 
   @override
   List<Object?> get props => [value, title];
@@ -161,6 +170,10 @@ class DockNotifier<T extends Widget> extends ChangeNotifier {
   /// Initial position on start pan
   Offset? _startPosition;
 
+  bool isReordering = false;
+
+  void changeReordering() => isReordering = !isReordering;
+
   /// Position after user triggers pan update
   Offset? _position;
 
@@ -292,10 +305,14 @@ class _DockItemState<T> extends State<DockItem> {
     final item = widget.item;
     final color = Colors.primaries[item.hashCode % Colors.primaries.length];
 
-    return Padding(
-      padding: EdgeInsets.only(left: widget.itemPadding),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 45),
+      padding: EdgeInsets.only(
+        left: widget.itemPadding + (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
+        right: (item.isReorderingTo ? (widget.itemDimension + widget.itemPadding) / 2 : 0),
+      ),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
+        duration: const Duration(milliseconds: 45),
         width: widget.itemDimension,
         height: widget.itemDimension,
         decoration: BoxDecoration(
@@ -373,8 +390,14 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
   // Notifier of dock settings
   DockNotifier<T>? notifier;
 
+  late StreamController<void Function()> reorderingController;
+
   @override
   void initState() {
+    reorderingController = StreamController()
+      ..stream.throttle(const Duration(milliseconds: 150)).listen((fn) {
+        fn.call();
+      });
     super.initState();
     _controller = AnimationController(vsync: this);
     items = widget.items;
@@ -465,9 +488,18 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                                     Offset((itemPadding + itemDimension) * (indexOfItem - i.toInt()), 0);
                               }
 
-                              notifier?.resetStartPosition(newStartPosition);
-                              items.remove(item);
-                              items.insert(i.toInt(), item);
+                              reorderingController.add(() async {
+                                final reorderingToItem = items[i.toInt()];
+                                reorderingToItem.isReorderingTo = true;
+                                item.isReorderingFrom = true;
+                                await Future.delayed(const Duration(milliseconds: 45));
+                                notifier?.resetStartPosition(newStartPosition);
+                                reorderingToItem.isReorderingTo = false;
+                                item.isReorderingFrom = false;
+                                items.remove(item);
+                                items.insert(i.toInt(), item);
+                              });
+
                               return;
                             }
                           }
@@ -475,17 +507,20 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                       }
                     },
                     onPanEnd: (details) async {
-                      _animateFlying(details.velocity.pixelsPerSecond, MediaQuery.sizeOf(context));
+                      if (!item.isReorderingFrom) {
+                        _animateFlying(details.velocity.pixelsPerSecond, MediaQuery.sizeOf(context));
+                      }
                       item.isFlying = false;
-
-                      await Future.delayed(Dock.flyingDuration);
+                      if (!item.isReorderingFrom) {
+                        await Future.delayed(Dock.flyingDuration);
+                      }
 
                       notifier?.clearFlyingDockItem();
                     },
                     child: DockItem(
                       item: item,
-                      itemDimension: item.isFlying ? 0 : itemDimension,
-                      itemPadding: item.isFlying ? 0 : itemPadding,
+                      itemDimension: item.isReorderingFrom || item.isFlying ? 0 : itemDimension,
+                      itemPadding: item.isReorderingFrom || item.isFlying ? 0 : itemPadding,
                     ),
                   ),
                 ),

@@ -10,11 +10,13 @@ dependencies:
   flutter:
     sdk: flutter
   equatable: ^2.0.5
+  stream_transform: ^2.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+
 
 flutter:
   uses-material-design: true
