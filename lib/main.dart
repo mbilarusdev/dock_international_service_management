@@ -19,12 +19,7 @@ class DockItemConfiguration<T extends Widget> with EquatableMixin {
   /// Equals true when item "flying"
   bool isFlying;
 
-  // Equals true when item is reordering
-  bool isReordering;
-
-  DockItemConfiguration({required this.value, required this.title})
-      : isFlying = false,
-        isReordering = false;
+  DockItemConfiguration({required this.value, required this.title}) : isFlying = false;
 
   @override
   List<Object?> get props => [value, title];
@@ -461,7 +456,6 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                                     itemPlusPadding,
                                   ),
                             ).contains(details.globalPosition)) {
-                              item.isReordering = true;
                               notifier?.resetStartPosition(
                                   notifier!.startPosition! + Offset(itemDimension + itemPadding, 0));
                               items.remove(item);
@@ -475,10 +469,9 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                     onPanEnd: (details) async {
                       _animateFlying(details.velocity.pixelsPerSecond, MediaQuery.sizeOf(context));
                       item.isFlying = false;
-                      // if (!item.isReordering) {
+
                       await Future.delayed(Dock.flyingDuration);
-                      // }
-                      item.isReordering = false;
+
                       notifier?.clearFlyingDockItem();
                     },
                     child: DockItem(
