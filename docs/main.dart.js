@@ -35523,36 +35523,41 @@ q.hB()},
 $S:179}
 A.W2.prototype={
 $1(a){return this.H5(a)},
-H5(a2){var s=0,r=A.N(t.H),q,p=this,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1
-var $async$$1=A.O(function(a3,a4){if(a3===1)return A.K(a4,r)
-while(true)$async$outer:switch(s){case 0:b=a2.b
-a=p.a
-a0=a.r
-a1=a0.b
-a0.ve(new A.x(a1.a+b.a,a1.b+b.b))
-b=a.d
-b===$&&A.b()
-a1=b.length
+H5(a3){var s=0,r=A.N(t.H),q,p=this,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2
+var $async$$1=A.O(function(a4,a5){if(a4===1)return A.K(a5,r)
+while(true)$async$outer:switch(s){case 0:a=a3.b
+a0=p.a
+a1=a0.r
+a2=a1.b
+a1.ve(new A.x(a2.a+a.a,a2.b+a.b))
+a=a0.d
+a===$&&A.b()
+a2=a.length
 o=p.b
-a0=p.c
-n=(a1+1)*o+a1*a0
+a1=p.c
+n=(a2+1)*o+a2*a1
 m=A.cJ(p.d,B.ho,t.w).w.a
 l=m.b
 k=(m.a-n)/2
-a1=a.a.f
-j=l-(a1+(o*2+a0))
-i=a2.d
+a2=a0.a.f
+j=l-(a2+(o*2+a1))
+i=a3.d
 h=p.e
-if(!A.a1k(new A.x(k,j),new A.x(k+n,l-a1)).B(0,i))h.c=!0
+if(!A.a1k(new A.x(k,j),new A.x(k+n,l-a2)).B(0,i))h.c=!0
 else{h.c=!1
-g=B.b.i6(b,h)
-if(b.length>1)for(a1=p.f,f=j+0,j+=a1,e=0;d=b.length,e<d;++e){c=e===d-1?o:0
+g=B.b.i6(a,h)
+if(a.length>1)for(a2=p.f,f=j+0,j+=a2,e=0;d=a.length,e<d;++e){c=e===d-1?o:0
 if(g===e)continue
-if(A.a1k(new A.x(k+a1*e,f),new A.x(k+(a1*(e+1)+c),j)).B(0,i)){a1=a.r
-if(a1!=null){a=a1.a
-a1.a=new A.x(a.a+(a0+o),a.b+0)
-a1.aC()}B.b.u(b,h)
-B.b.i7(b,B.f.S(e),h)
+if(A.a1k(new A.x(k+a2*e,f),new A.x(k+(a2*(e+1)+c),j)).B(0,i)){a2=a0.r
+j=a2.a
+j.toString
+if(g<e)b=new A.x(j.a+(o+a1)*(B.f.S(e)-g),j.b+0)
+else if(g>e)b=new A.x(j.a-(o+a1)*(g-B.f.S(e)),j.b-0)
+else b=j
+a2.a=b
+a2.aC()
+B.b.u(a,h)
+B.b.i7(a,B.f.S(e),h)
 s=1
 break $async$outer}}}case 1:return A.L(q,r)}})
 return A.M($async$$1,r)},

@@ -456,8 +456,16 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                                     itemPlusPadding,
                                   ),
                             ).contains(details.globalPosition)) {
-                              notifier?.resetStartPosition(
-                                  notifier!.startPosition! + Offset(itemDimension + itemPadding, 0));
+                              Offset newStartPosition = notifier!.startPosition!;
+                              if (indexOfItem < i) {
+                                newStartPosition = newStartPosition +
+                                    Offset((itemPadding + itemDimension) * (i.toInt() - indexOfItem), 0);
+                              } else if (indexOfItem > i) {
+                                newStartPosition = newStartPosition -
+                                    Offset((itemPadding + itemDimension) * (indexOfItem - i.toInt()), 0);
+                              }
+
+                              notifier?.resetStartPosition(newStartPosition);
                               items.remove(item);
                               items.insert(i.toInt(), item);
                               return;
