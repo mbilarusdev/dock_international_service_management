@@ -462,7 +462,8 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                                   ),
                             ).contains(details.globalPosition)) {
                               item.isReordering = true;
-                              notifier?.resetStartPosition(notifier!.position);
+                              notifier?.resetStartPosition(
+                                  notifier!.startPosition! + Offset(itemDimension + itemPadding, 0));
                               items.remove(item);
                               items.insert(i.toInt(), item);
                               return;
@@ -474,9 +475,9 @@ class _DockState<T extends Widget> extends State<Dock<T>> with TickerProviderSta
                     onPanEnd: (details) async {
                       _animateFlying(details.velocity.pixelsPerSecond, MediaQuery.sizeOf(context));
                       item.isFlying = false;
-                      if (!item.isReordering) {
-                        await Future.delayed(Dock.flyingDuration);
-                      }
+                      // if (!item.isReordering) {
+                      await Future.delayed(Dock.flyingDuration);
+                      // }
                       item.isReordering = false;
                       notifier?.clearFlyingDockItem();
                     },
